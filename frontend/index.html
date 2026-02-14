@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="logo-ico.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="Advanced BTTS prediction system using AI and statistical analysis for soccer matches">
+    <meta name="theme-color" content="#1a1f2e">
+    <title>Predict BTTS</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header header-new">
+            <div class="header-top">
+                <div class="brand">
+                    <img src="logo.png" alt="" class="brand-icon">
+                    <!-- <h1 class="brand-title"></h1> -->
+                </div>
+                <div class="header-actions">
+                    <button id="themeToggle" class="icon-btn" title="Toggle theme">
+                        <img src="day-and-night.png" alt="Theme">
+                    </button>
+                    <button id="hamburgerMenu" class="hamburger-menu" title="Menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+            </div>
+            <!-- <nav class="header-tabs">
+                <button class="tab-item nav-btn active" data-section="dashboard">
+                    <span>Dashboard</span>
+                </button>
+                <button class="tab-item nav-btn" data-section="predictions">
+                    <span>Predictions</span>
+                </button>
+                <button class="tab-item nav-btn" data-section="upcoming">
+                    <span>Fixtures</span>
+                </button>
+                <button class="tab-item nav-btn" style="display: none;" data-section="history">
+                    <span>History</span>
+                </button>
+            </nav> -->
+            <nav class="header-subnav">
+                <button class="subnav-item nav-btn active" data-section="dashboard">Home</button>
+                <button class="subnav-item nav-btn" data-section="predictions">Predictions</button>
+                <button class="subnav-item nav-btn" data-section="upcoming">Fixtures</button>
+                <button class="subnav-item nav-btn" data-section="Update">News</button>
+                <!-- <button class="subnav-item nav-btn" data-section="More">More</button> -->
+            </nav>
+            <nav class="mobile-menu">
+                <button class="subnav-item nav-btn active" data-section="dashboard">Home</button>
+                <button class="subnav-item nav-btn" data-section="predictions">Predictions</button>
+                <button class="subnav-item nav-btn" data-section="upcoming">Fixtures</button>
+                <button class="subnav-item nav-btn" data-section="Update">News</button>
+                <!-- <button class="subnav-item nav-btn" data-section="More">More</button> -->
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <div class="section-header">
+                    <h2>Dashboard</h2>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <!-- Top Leagues -->
+                    <div class="card">
+                        <h3>Top Leagues</h3>
+                        <div id="topLeaguesList" class="leagues-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Predictions -->
+                    <div class="card">
+                        <h3>Recent Predictions</h3>
+                        <div id="recentPredictions" class="predictions-list">
+                            <p class="loading">Loading predictions...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Predictions Section -->
+            <section id="predictions" class="section">
+                <div class="section-header">
+                    <h2>Select Teams</h2>
+                    <!-- <h2>Match Prediction</h2> -->
+                </div>
+
+                <div class="prediction-form">
+                    <div class="form-group">
+                        <label for="league">Leagues</label>
+                        <select id="league">
+                            <option value="">Select a league...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="homeTeam">Home Team</label>
+                        <select id="homeTeam">
+                            <option value="">Select home team...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="awayTeam">Away Team</label>
+                        <select id="awayTeam">
+                            <option value="">Select away team...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="season">Season</label>
+                        <select id="season">
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="display: none;">
+                        <label for="modelType">Model</label>
+                        <select id="modelType">
+                            <option value="ensemble" selected>Ensemble (Recommended)</option>
+                            <option value="lr">Logistic Regression</option>
+                            <option value="nn">Neural Network</option>
+                        </select>
+                    </div>
+
+                    <button id="predictBtn" class="btn-primary">Predict BTTS</button>
+                </div>
+
+                <div id="predictionResult" class="prediction-result hidden">
+                    <div id="resultCards" class="result-cards">
+                        <!-- Home Team Stats -->
+                        <div class="team-card">
+                            <div class="team-header">
+                                <img id="homeTeamCrest" src="" alt="Home Team" class="team-crest">
+                                <div>
+                                    <h4 id="homeTeamName">Home Team</h4>
+                                    <p class="team-label">Home <span id="homeTeamPosition" class="table-position"></span></p>
+                                </div>
+                            </div>
+                            <div class="team-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Goals/Game</span>
+                                    <span class="stat-value" id="homeGoalsPerGame">-</span>
+                                    <span class="stat-note" id="homeGoalsNote"> </span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Goals Conceded</span>
+                                    <span class="stat-value" id="homeGoalsConceded">-</span>
+                                    <span class="stat-note" id="homeConcedeNote"> </span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">DFI Score</span>
+                                    <span class="stat-value" id="homeDFI">-</span>
+                                    <span class="stat-note" id="homeDFINote"> </span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Clean Sheet %</span>
+                                    <span class="stat-value" id="homeCleanSheets">-</span>
+                                    <span class="stat-note" id="homeCleanNote"> </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Away Team Stats -->
+                        <div class="team-card">
+                            <div class="team-header">
+                                <img id="awayTeamCrest" src="" alt="Away Team" class="team-crest">
+                                <div>
+                                    <h4 id="awayTeamName">Away Team</h4>
+                                    <p class="team-label">Away <span id="awayTeamPosition" class="table-position"></span></p>
+                                </div>
+                            </div>
+                            <div class="team-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Goals/Game</span>
+                                    <span class="stat-value" id="awayGoalsPerGame">-</span>
+                                    <span class="stat-note" id="awayGoalsNote"> </span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Goals Conceded</span>
+                                    <span class="stat-value" id="awayGoalsConceded">-</span>
+                                    <span class="stat-note" id="awayConcedeNote"> </span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">DFI Score</span>
+                                    <span class="stat-value" id="awayDFI">-</span>
+                                    <span class="stat-note" id="awayDFINote"> </span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Clean Sheet %</span>
+                                    <span class="stat-value" id="awayCleanSheets">-</span>
+                                    <span class="stat-note" id="awayCleanNote"> </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BTTS Prediction Result -->
+                    <div class="btts-prediction">
+                        <div class="prediction-header">
+                            <h3>Statistics</h3>
+                        </div>
+                        <div class="prediction-display">
+                            <div class="detail">
+                                <span class="label">Prediction: GG?</span>
+                                <span class="value" id="bttsYesNo">--</span>
+                            </div>
+                            <div class="prediction-circle" id="predictionCircle">
+                                <div class="prediction-value">
+                                    <span class="probability" id="bttsProb">--</span>
+                                    <span class="percent">%</span>
+                                </div>
+                                <div class="probability-label">Probability</div>
+                            </div>
+                            <div class="detail">
+                                <span class="label">Expected Goals</span>
+                                <span class="value" id="expectedGoals">--</span>
+                            </div>
+                        </div>
+                        <div class="prediction-confidence">
+                            <span class="label">Confidence</span>
+                            <span class="value" id="bttsConfidence">--</span>
+                            <div class="confidence-bar">
+                                <div id="confidenceFill" class="confidence-fill"></div>
+                            </div>
+                        </div>
+
+                        <!-- BTTS Analysis -->
+                        <div class="btts-analysis">
+                            <h4>Goal-Goal Analysis</h4>
+                            <div class="analysis-items">
+                                <div class="analysis-item">
+                                    <span class="analysis-label">Attacking threat</span>
+                                    <span class="analysis-value" id="analysisAttacking">--</span>
+                                </div>
+                                <div class="analysis-item">
+                                    <span class="analysis-label">Defensive weakness</span>
+                                    <span class="analysis-value" id="analysisDefensive">--</span>
+                                </div>
+                                <div class="analysis-item full-width">
+                                    <span class="analysis-label">Key insight</span>
+                                    <span class="analysis-value" id="analysisInsight">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Model Comparison -->
+                        <div class="model-comparison" style="display: none;">
+                            <h4>Model Comparison</h4>
+                            <div class="models">
+                                <div class="model">
+                                    <span class="model-name">Logistic Regression</span>
+                                    <span class="model-prob" id="lrProb">--</span>
+                                </div>
+                                <div class="model">
+                                    <span class="model-name">Neural Network</span>
+                                    <span class="model-prob" id="nnProb">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Form & H2H -->
+                    <div class="form-analysis">
+                        <div class="form-column">
+                            <h4 id="homeFormTitle">Home Form</h4>
+                            <div id="homeLast5" class="match-list"></div>
+                        </div>
+                        <div class="form-column">
+                            <h4>Head to Head</h4>
+                            <div id="h2hMatches" class="match-list"></div>
+                        </div>
+                        <div class="form-column">
+                            <h4 id="awayFormTitle">Away Form</h4>
+                            <div id="awayLast5" class="match-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upcoming Fixtures Section -->
+            <section id="upcoming" class="section">
+                <div class="section-header">
+                    <h2>Upcoming</h2>
+                </div>
+
+                <div class="fixtures-filter">
+                    <select id="competitionFilter">
+                        <option value="PL">Premier League (PL)</option>
+                        <option value="BL1">Bundesliga (BL1)</option>
+                        <option value="PD">La Liga (PD)</option>
+                        <option value="SA">Serie A (SA)</option>
+                        <option value="FL1">Ligue 1 (FL1)</option>
+                        <option value="DED">Eredivisie (DED)</option>
+                        <option value="PPL">Primeira Liga (PPL)</option>
+                        <option value="ELC">Championship (ELC)</option>
+                        <option value="CL">Champions League (CL)</option>
+                        <option value="EL">Europa League (EL)</option>
+                    </select>
+                    <button id="loadFixturesBtn" class="btn-primary">Load Fixtures</button>
+                </div>
+
+                <div id="fixturesList" class="fixtures-list">
+                    <p class="loading">Click "Fetch Upcoming" to display upcoming matches...</p>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section id="history" class="section">
+                <div class="section-header">
+                    <h2>Prediction History</h2>
+                </div>
+
+                <div class="history-controls">
+                    <button id="loadHistoryBtn" class="btn-primary">Load History</button>
+                    <button id="exportHistoryBtn" class="btn-secondary">Export CSV</button>
+                </div>
+
+                <div id="historyTable" class="history-table">
+                    <p class="loading">Click "Load History" to display previous predictions...</p>
+                </div>
+            </section>
+            <section id="Update" class="section">
+                <div class="section-header">
+                    <h2>News</h2>
+                </div>
+                <div id="newsLoader"></div>
+                <p class="loading">Coming Soon</p>
+            </section>
+        </main>
+    </div>
+
+    <div id="loaderOverlay" class="loader-overlay">
+        <button id="cancelPredictBtn" class="loader-cancel-btn">Cancel</button>
+        <div id="lottieContainer" class="loader-container"></div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/charts.js"></script>
+    <script src="js/api.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
