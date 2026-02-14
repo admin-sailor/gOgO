@@ -1,5 +1,4 @@
 {
-  "projectType": "python",
   "buildCommand": "pip install -r backend/requirements.txt",
   "env": {
     "PYTHON_VERSION": "3.11"
