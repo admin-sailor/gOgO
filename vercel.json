@@ -1,6 +1,15 @@
 {
-  "buildCommand": "pip install --break-system-packages -r backend/requirements.txt",
-  "env": {
-    "PYTHON_VERSION": "3.11"
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "backend/app.py"
+    }
+  ]
 }
