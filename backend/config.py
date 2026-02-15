@@ -31,4 +31,8 @@ NN_MODEL_PATH = os.path.join(MODEL_DIR, 'neural_network_btts.h5')
 SEASONS = ['2023', '2024', '2025']
 
 # CORS settings
-CORS_ORIGINS = ['*']  # Update with your frontend URL in production
+_cors_env = os.getenv('CORS_ORIGINS', '')
+if _cors_env:
+    CORS_ORIGINS = [x.strip() for x in _cors_env.split(',') if x.strip()]
+else:
+    CORS_ORIGINS = ['*']
