@@ -15,13 +15,6 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').catch(function(){});
-            });
-        }
-    </script>
     <div class="container">
         <!-- Header -->
         <header class="header header-new">
@@ -152,7 +145,7 @@
                         <!-- Home Team Stats -->
                         <div class="team-card">
                             <div class="team-header">
-                                <img id="homeTeamCrest" src="" alt="Home Team" class="team-crest" width="50" height="50" loading="lazy" decoding="async" fetchpriority="high" onerror="this.src='logo-ico.png'">
+                                <img id="homeTeamCrest" src="" alt="Home Team" class="team-crest" loading="lazy" decoding="async" fetchpriority="low" onerror="this.src='logo-ico.png'">
                                 <div>
                                     <h4 id="homeTeamName">Home Team</h4>
                                     <p class="team-label">Home <span id="homeTeamPosition" class="table-position"></span></p>
@@ -185,7 +178,7 @@
                         <!-- Away Team Stats -->
                         <div class="team-card">
                             <div class="team-header">
-                                <img id="awayTeamCrest" src="" alt="Away Team" class="team-crest" width="50" height="50" loading="lazy" decoding="async" fetchpriority="high" onerror="this.src='logo-ico.png'">
+                                <img id="awayTeamCrest" src="" alt="Away Team" class="team-crest" loading="lazy" decoding="async" fetchpriority="low" onerror="this.src='logo-ico.png'">
                                 <div>
                                     <h4 id="awayTeamName">Away Team</h4>
                                     <p class="team-label">Away <span id="awayTeamPosition" class="table-position"></span></p>
