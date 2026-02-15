@@ -1642,27 +1642,27 @@ tbody tr:hover {
     transform: translateX(24px);
     opacity: 0;
     transition: transform 0.25s ease, opacity 0.25s ease;
-    min-height: 36px;
+    height: 36px;
 }
 .toast-success {
-    background-color: #317A00;
+    background-color: #1f4d00;
     border-color: #51DF34;
-    height: 25px;
+    height: 30px;
     font-size: 10px;
     color: #51DF34;
 }
 .toast-error {
-    background-color: #7a1000;
+    background-color: #4c0a00;
     border-color: #DF4A34;
-    height: 25px;
+    height: 30px;
     font-size: 10px;
     color: #DF4A34;
 }
 
 .toast-fetch {
-    background-color: #787A00;
+    background-color: #484b00;
     border-color: #DFCB34;
-    height: 25px;
+    height: 30px;
     font-size: 10px;
     color: #DFCB34;
 }
@@ -1675,17 +1675,17 @@ tbody tr:hover {
     opacity: 0;
 }
 .toast-icon {
-    width: 15px;
-    height: 15px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-right: 6px;
+    /* margin-right: 6px; */
 }
 .toast-icon svg {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     display: block;
 }
 .toast-message {

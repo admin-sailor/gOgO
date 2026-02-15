@@ -1,4 +1,18 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const DEFAULT_API_BASE = 'http://localhost:5000/api';
+function resolveApiBase() {
+    try {
+        const w = typeof window !== 'undefined' ? window : {};
+        if (w.__API_BASE_URL) return String(w.__API_BASE_URL).replace(/\/$/, '');
+        const m = typeof document !== 'undefined' ? document.querySelector('meta[name="api-base-url"]') : null;
+        if (m && m.content) return String(m.content).replace(/\/$/, '');
+        const o = typeof location !== 'undefined' ? location.origin : '';
+        if (o) return `${o}/api`;
+        return DEFAULT_API_BASE;
+    } catch (_) {
+        return DEFAULT_API_BASE;
+    }
+}
+const API_BASE_URL = resolveApiBase();
 
 class API {
     static async request(endpoint, options = {}) {
