@@ -74,8 +74,9 @@ class MySQLDB:
                     try:
                         cur.execute(stmt)
                     except Error as e_stmt:
-                        if getattr(e_stmt, 'errno', None) == 1061:
-                            logger.info(f"Ignoring duplicate index: {e_stmt}")
+                        err = getattr(e_stmt, 'errno', None)
+                        if err in (1061, 1060, 1091):
+                            logger.info(f"Ignoring non-critical schema error ({err}): {e_stmt}")
                             continue
                         raise
                 logger.info("Executed setup-mysql.sql to ensure schema")
@@ -150,7 +151,7 @@ class MySQLDB:
             return None
 
     def store_prediction(self, home_team_id: int, away_team_id: int,
-                         fixture_id: Optional[int], prediction: Dict, odds: Optional[float] = None):
+                         fixture_id: Optional[int], prediction: Dict, user_id: Optional[str] = None, odds: Optional[float] = None):
         """Store prediction in database; upsert on fixture_id when provided"""
         try:
             conn = self._get_conn()
@@ -160,14 +161,15 @@ class MySQLDB:
                 """
                 INSERT INTO predictions
                   (fixture_id, home_team_id, away_team_id, btts_probability, btts_prediction,
-                   confidence, model_type, odds, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                   confidence, model_type, odds, user_id, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                 ON DUPLICATE KEY UPDATE
                    btts_probability = VALUES(btts_probability),
                    btts_prediction = VALUES(btts_prediction),
                    confidence = VALUES(confidence),
                    model_type = VALUES(model_type),
                    odds = VALUES(odds),
+                   user_id = VALUES(user_id),
                    updated_at = NOW()
                 """,
                 (
@@ -178,7 +180,8 @@ class MySQLDB:
                     1 if prediction.get('btts_prediction') else 0,
                     float(prediction.get('confidence') or 0),
                     str(prediction.get('model') or 'ensemble'),
-                    odds
+                    odds,
+                    user_id
                 )
             )
             cur.close()
@@ -232,14 +235,14 @@ class MySQLDB:
                     logger.info(f"Skipping team upsert during fixtures cache: {e}")
                 cur.execute(
                     """
-                    INSERT INTO fixtures (fixture_id, competition_code, home_team_id, away_team_id, utc_date, status, created_at)
+                    INSERT INTO fixtures (fixture_id, competition_code, home_team_id, away_team_id, `utc_date`, `status`, created_at)
                     VALUES (%s, %s, %s, %s, %s, %s, NOW())
                     ON DUPLICATE KEY UPDATE
-                      competition_code = VALUES(competition_code),
-                      home_team_id = VALUES(home_team_id),
-                      away_team_id = VALUES(away_team_id),
-                      utc_date = VALUES(utc_date),
-                      status = VALUES(status)
+                    competition_code = VALUES(competition_code),
+                    home_team_id = VALUES(home_team_id),
+                    away_team_id = VALUES(away_team_id),
+                    `utc_date` = VALUES(`utc_date`),
+                    `status` = VALUES(`status`)
                     """,
                     (
                         fixture.get('id'),
@@ -256,22 +259,36 @@ class MySQLDB:
         except Error as e:
             logger.error(f"Error caching fixtures: {e}")
 
-    def get_prediction_history(self, limit: int = 100) -> List[Dict]:
+    def get_prediction_history(self, limit: int = 100, user_id: Optional[str] = None) -> List[Dict]:
         """Get prediction history"""
         try:
             conn = self._get_conn()
             cur = conn.cursor(dictionary=True)
-            cur.execute(
-                """
-                SELECT id, fixture_id, home_team_id, away_team_id,
-                       btts_probability, btts_prediction, confidence,
-                       model_type, odds, created_at
-                FROM predictions
-                ORDER BY created_at DESC
-                LIMIT %s
-                """,
-                (int(limit),)
-            )
+            if user_id:
+                cur.execute(
+                    """
+                    SELECT id, fixture_id, home_team_id, away_team_id,
+                           btts_probability, btts_prediction, confidence,
+                           model_type, odds, created_at
+                    FROM predictions
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT %s
+                    """,
+                    (user_id, int(limit))
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT id, fixture_id, home_team_id, away_team_id,
+                           btts_probability, btts_prediction, confidence,
+                           model_type, odds, created_at
+                    FROM predictions
+                    ORDER BY created_at DESC
+                    LIMIT %s
+                    """,
+                    (int(limit),)
+                )
             rows = cur.fetchall()
             cur.close()
             conn.close()

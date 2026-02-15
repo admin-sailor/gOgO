@@ -100,6 +100,7 @@ def predict_btts():
         fixture_id = data.get('fixture_id')
         season = data.get('season', '2024')
         model_type = data.get('model', 'ensemble')
+        user_id = data.get('user_id')
         football_client, feature_engineer, predictor, db, _ = _clients()
         home_matches = football_client.get_team_matches(home_team_id, season)
         away_matches = football_client.get_team_matches(away_team_id, season)
@@ -130,7 +131,7 @@ def predict_btts():
             db.upsert_team(away_team_id, away_info.get('name'), away_info.get('shortName'), away_info.get('crest'), None)
         except Exception as e:
             logger.info(f"Team upsert skipped: {e}")
-        db.store_prediction(home_team_id, away_team_id, fixture_id, prediction)
+        db.store_prediction(home_team_id, away_team_id, fixture_id, prediction, user_id=user_id)
         return jsonify({
             'prediction': prediction,
             'indicators': btts_indicators,
@@ -161,8 +162,9 @@ def get_upcoming_fixtures():
 def get_predictions_history():
     try:
         limit = int(request.args.get('limit', 100))
+        user_id = request.args.get('user_id')
         _, _, _, db, _ = _clients()
-        predictions = db.get_prediction_history(limit)
+        predictions = db.get_prediction_history(limit, user_id=user_id)
         return jsonify({'predictions': predictions, 'count': len(predictions)})
     except Exception as e:
         logger.error(f"Error fetching predictions: {e}")

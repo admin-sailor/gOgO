@@ -84,3 +84,8 @@ CREATE TABLE IF NOT EXISTS predictions (
 CREATE INDEX predictions_created_at_idx ON `predictions` (`created_at`);
 CREATE INDEX predictions_home_idx ON `predictions` (`home_team_id`);
 CREATE INDEX predictions_away_idx ON `predictions` (`away_team_id`);
+
+ALTER TABLE `predictions` ADD COLUMN `user_id` VARCHAR(64) NULL;
+ALTER TABLE `predictions` DROP INDEX `uq_predictions_fixture`;
+CREATE UNIQUE INDEX `uq_predictions_fixture_user` ON `predictions` (`fixture_id`, `user_id`);
+CREATE INDEX `predictions_user_idx` ON `predictions` (`user_id`);

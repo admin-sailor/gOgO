@@ -13,6 +13,19 @@ function resolveApiBase() {
     }
 }
 const API_BASE_URL = resolveApiBase();
+function getClientId() {
+    try {
+        const k = 'client_id';
+        const existing = localStorage.getItem(k);
+        if (existing) return existing;
+        const gen = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (`cid_${Math.random().toString(36).slice(2)}_${Date.now()}`);
+        localStorage.setItem(k, gen);
+        return gen;
+    } catch (_) {
+        return `cid_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+    }
+}
+const CLIENT_ID = getClientId();
 
 class API {
     static async request(endpoint, options = {}) {
@@ -60,6 +73,7 @@ class API {
                 fixture_id: fixtureId,
                 season: season,
                 model: modelType,
+                user_id: CLIENT_ID,
             }),
             signal
         });
@@ -70,7 +84,8 @@ class API {
     }
 
     static async getPredictionsHistory(limit = 100) {
-        return this.request(`/predictions/history?limit=${limit}`);
+        const q = encodeURIComponent(CLIENT_ID);
+        return this.request(`/predictions/history?limit=${limit}&user_id=${q}`);
     }
 
     static async getHeadToHead(team1Id, team2Id) {

@@ -151,6 +151,20 @@ async function loadTeams(leagueCode) {
         document.getElementById('homeTeam').innerHTML = '<option value="">Select home team...</option>' + teamOptions;
         document.getElementById('awayTeam').innerHTML = '<option value="">Select away team...</option>' + teamOptions;
 
+        // Prefetch crests
+        try {
+            const limit = Math.min(20, teams.length);
+            for (let i = 0; i < limit; i++) {
+                const u = teams[i]?.crest;
+                if (u) {
+                    const img = new Image();
+                    img.decoding = 'async';
+                    img.loading = 'eager';
+                    img.referrerPolicy = 'no-referrer';
+                    img.src = u;
+                }
+            }
+        } catch (_) {}
         // Show team count
         const teamCountEl = document.getElementById('teamCount');
         if (teamCountEl) {
@@ -189,7 +203,7 @@ async function loadDashboard() {
 
         const topLeaguesHtml = topLeagues.map(league => `
             <div class="league-item" onclick="selectLeague('${league.code}')">
-                <img src="${league.crest}" alt="${league.name}" class="league-crest" onerror="this.src='https://images.icon-icons.com/2112/PNG/128/ball_icon_131055.png'">
+                <img src="${league.crest}" alt="${league.name}" class="league-crest" loading="lazy" decoding="async" fetchpriority="low" onerror="this.src='logo-ico.png'">
                 <div class="league-info">
                     <div class="league-name">${league.name}</div>
                     <div class="league-country">${league.country}</div>
