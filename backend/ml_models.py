@@ -4,8 +4,20 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from tensorflow import keras
-from tensorflow.keras import layers
+keras = None
+layers = None
+def _lazy_import_tf():
+    global keras, layers
+    if keras is not None and layers is not None:
+        return True
+    try:
+        from tensorflow import keras as _keras
+        from tensorflow.keras import layers as _layers
+        keras = _keras
+        layers = _layers
+        return True
+    except Exception:
+        return False
 import joblib
 import logging
 from typing import Dict, List, Tuple
@@ -53,8 +65,11 @@ class BTTSPredictor:
         
         if os.path.exists(NN_MODEL_PATH):
             try:
-                self.nn_model = keras.models.load_model(NN_MODEL_PATH)
-                logger.info("Neural Network model loaded")
+                if _lazy_import_tf():
+                    self.nn_model = keras.models.load_model(NN_MODEL_PATH)
+                    logger.info("Neural Network model loaded")
+                else:
+                    logger.warning("TensorFlow not available; skipping NN model load")
             except Exception as e:
                 logger.warning(f"Could not load NN model: {e}")
         # Aggregated dataset models (optional)
@@ -107,6 +122,9 @@ class BTTSPredictor:
     
     def train_neural_network(self, X: np.ndarray, y: np.ndarray):
         """Train Neural Network model"""
+        if not _lazy_import_tf():
+            logger.warning("TensorFlow not available; cannot train NN model")
+            return
         X_scaled = self.scaler.fit_transform(X)
         X_train, X_test, y_train, y_test = train_test_split(
             X_scaled, y, test_size=0.2, random_state=42
@@ -167,7 +185,7 @@ class BTTSPredictor:
     
     def predict_btts_neural(self, home_stats: Dict, away_stats: Dict) -> Dict:
         """Predict BTTS probability using Neural Network"""
-        if not self.nn_model:
+        if not self.nn_model or not _lazy_import_tf():
              return self.predict_btts_heuristic(home_stats, away_stats, model_name='Neural Network (Heuristic)')
         
         try:
