@@ -17,7 +17,7 @@ class MySQLDB:
             self._ensure_schema()
             self.pool = pooling.MySQLConnectionPool(
                 pool_name="btts_pool",
-                pool_size=5,
+                pool_size=2,
                 host=MYSQL_HOST or "127.0.0.1",
                 port=int(MYSQL_PORT or 3306),
                 user=MYSQL_USER or "root",
