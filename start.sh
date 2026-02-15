@@ -4,5 +4,5 @@ cd backend
 export PYTHONUNBUFFERED=1
 export PYTHONDONTWRITEBYTECODE=1
 PORT="${PORT:-8080}"
-python -m pip install --no-cache-dir -r requirements.txt
-exec python -m gunicorn app:app --bind "0.0.0.0:${PORT}" --workers 1 --threads 2 --timeout 120
+python3 -m pip install --no-cache-dir -r requirements.txt || pip3 install --no-cache-dir -r requirements.txt
+exec python3 -m gunicorn app:app --bind "0.0.0.0:${PORT}" --workers 1 --threads 2 --timeout 120
