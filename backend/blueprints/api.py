@@ -278,3 +278,6 @@ def aggregated_predict():
     except Exception as e:
         logger.error(f"Error in aggregated prediction: {e}")
         return jsonify({'error': str(e)}), 500
+@api_bp.route('/healthz', methods=['GET'])
+def healthz():
+    return jsonify({'status': 'ok'}), 200
