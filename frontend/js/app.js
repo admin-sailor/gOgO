@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeTheme();
     initializeEventListeners();
     initializeSectionFromStorage();
+    initializeImageProtection();
     const predictBtn = document.getElementById('predictBtn');
     if (predictBtn) predictBtn.disabled = true;
     await populateLeaguesFromDataset();
@@ -158,6 +159,40 @@ function enhanceSelectWithScroll(id, size = 8) {
     el.addEventListener('blur', () => {
         close();
     });
+}
+
+function initializeImageProtection() {
+    try {
+        const brand = document.querySelector('.brand-icon');
+        if (brand) brand.classList.add('interactive-img');
+        const themeImg = document.querySelector('#themeToggle img');
+        if (themeImg) themeImg.classList.add('interactive-img');
+        document.querySelectorAll('img').forEach(img => {
+            img.setAttribute('draggable', 'false');
+        });
+        document.addEventListener('contextmenu', (e) => {
+            const t = e.target;
+            if (t && t.tagName === 'IMG' && !t.classList.contains('interactive-img')) {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('dragstart', (e) => {
+            const t = e.target;
+            if (t && t.tagName === 'IMG' && !t.classList.contains('interactive-img')) {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('click', (e) => {
+            const path = e.composedPath ? e.composedPath() : [];
+            const img = path.find(el => el && el.tagName === 'IMG');
+            if (img && !img.classList.contains('interactive-img')) {
+                const anchor = path.find(el => el && el.tagName === 'A');
+                if (anchor) {
+                    e.preventDefault();
+                }
+            }
+        }, true);
+    } catch (_) {}
 }
 
 function switchSection(e) {

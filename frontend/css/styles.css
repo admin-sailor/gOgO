@@ -701,6 +701,11 @@ select:hover {
     color: #fff;
 }
 
+img:not(.interactive-img) {
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
 .theme-light .dropdown-option:hover{
     color: #fff;
     background: #5f3fa5;
