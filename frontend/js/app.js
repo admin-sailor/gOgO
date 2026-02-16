@@ -63,6 +63,12 @@ function initializeEventListeners() {
     // History
     document.getElementById('loadHistoryBtn').addEventListener('click', loadPredictionHistory);
     document.getElementById('exportHistoryBtn').addEventListener('click', exportHistoryCSV);
+
+    enhanceSelectWithScroll('league', 10);
+    enhanceSelectWithScroll('homeTeam', 10);
+    enhanceSelectWithScroll('awayTeam', 10);
+    enhanceSelectWithScroll('season', 6);
+    enhanceSelectWithScroll('competitionFilter', 10);
 }
 
 async function populateLeaguesFromDataset() {
@@ -97,6 +103,61 @@ async function populateLeaguesFromDataset() {
     } catch (e) {
         console.warn('Failed to populate leagues from dataset:', e && e.message ? e.message : e);
     }
+}
+
+function enhanceSelectWithScroll(id, size = 8) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const root = el.parentElement || el;
+    let listEl = root.querySelector('.dropdown-list');
+    if (!listEl) {
+        listEl = document.createElement('div');
+        listEl.className = 'dropdown-list';
+        root.appendChild(listEl);
+    }
+    const isOpen = () => listEl.style.display === 'block';
+    const close = () => {
+        listEl.style.display = 'none';
+        el.classList.remove('select-expanded');
+    };
+    const open = () => {
+        const opts = Array.from(el.options || []).filter(o => String(o.value) !== '');
+        const maxRows = Math.max(4, Math.min(size, opts.length));
+        listEl.innerHTML = opts.map(o => `<div class="dropdown-option" data-val="${o.value}">${o.text}</div>`).join('');
+        listEl.style.display = 'block';
+        listEl.style.maxHeight = `${maxRows * 32}px`;
+        el.classList.add('select-expanded');
+        listEl.querySelectorAll('.dropdown-option').forEach(optEl => {
+            optEl.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                const v = optEl.getAttribute('data-val');
+                el.value = v;
+                const ev = new Event('change');
+                el.dispatchEvent(ev);
+                close();
+            }, { once: true });
+        });
+    };
+    el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (isOpen()) {
+            close();
+        } else {
+            open();
+        }
+    });
+    document.addEventListener('mousedown', (e) => {
+        if (isOpen()) {
+            const inside = e.target === el || listEl.contains(e.target);
+            if (!inside) close();
+        }
+    });
+    el.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+    });
+    el.addEventListener('blur', () => {
+        close();
+    });
 }
 
 function switchSection(e) {
