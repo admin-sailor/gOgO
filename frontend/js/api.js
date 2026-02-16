@@ -84,7 +84,8 @@ class API {
     }
 
     static async getPredictionsHistory(limit = 100) {
-        return this.request(`/predictions/history?limit=${limit}&user_id=${CLIENT_ID}`);
+        const q = encodeURIComponent(CLIENT_ID);
+        return this.request(`/predictions/history?limit=${limit}&user_id=${q}`);
     }
 
     static async getHeadToHead(team1Id, team2Id) {
