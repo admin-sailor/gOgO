@@ -1,6 +1,7 @@
 let teams = [];
 let currentPrediction = null;
 let dashboardData = null;
+const teamNameCache = new Map();
 let selectedLeague = 'PL'; // Track selected league
 let pendingFixtureId = null; // Set when predicting from fixtures page
 let activeFixtureBtn = null; // Track active fixture predict button
@@ -142,6 +143,13 @@ async function loadTeams(leagueCode) {
         const response = await API.getTeams(leagueCode);
         teams = response.teams || [];
         console.log(' Teams loaded:', teams.length);
+        try {
+            teams.forEach(t => {
+                if (t && t.id) {
+                    teamNameCache.set(parseInt(t.id), { name: t.name, crest: t.crest });
+                }
+            });
+        } catch (_) {}
 
         // Populate dropdowns
         const teamOptions = teams.map(team => 
@@ -185,8 +193,33 @@ async function loadTeams(leagueCode) {
 }
 
 function getTeamName(teamId) {
-    const team = teams.find(t => t.id === teamId || t.id === parseInt(teamId));
-    return team?.name || `Team ${teamId}`;
+    const id = parseInt(teamId);
+    if (teamNameCache.has(id)) {
+        return teamNameCache.get(id)?.name || `Team ${id}`;
+    }
+    const team = teams.find(t => t.id === id);
+    return team?.name || `Team ${id}`;
+}
+
+async function resolveTeamName(teamId) {
+    const id = parseInt(teamId);
+    const cached = teamNameCache.get(id);
+    if (cached && cached.name) return cached.name;
+    const fromList = teams.find(t => t.id === id);
+    if (fromList && fromList.name) {
+        teamNameCache.set(id, { name: fromList.name, crest: fromList.crest });
+        return fromList.name;
+    }
+    try {
+        const statsResp = await API.getTeamStats(id);
+        const nm = statsResp?.stats?.team_name;
+        const crest = statsResp?.stats?.crest;
+        if (nm) {
+            teamNameCache.set(id, { name: nm, crest });
+            return nm;
+        }
+    } catch (_) {}
+    return `Team ${id}`;
 }
 
 async function loadDashboard() {
@@ -227,24 +260,29 @@ async function loadDashboard() {
 
         // Recent Predictions
         const recentList = predList.slice(0, 5);
-    if (recentList.length === 0) {
-        document.getElementById('recentPredictions').innerHTML = `
-            <div id="recentLoader" class="recent-loader"></div>
-            <p class="loading">No predictions yet. Make one to see it here.</p>
-        `;
-        startRecentLoader();
-    } else {
-        stopRecentLoader();
-        const recentPredictionsHtml = recentList.map(pred => `
-            <div class="prediction-item">
-                <div class="team-info">
-                    <div class="team-name">${getTeamName(pred.home_team_id)} vs ${getTeamName(pred.away_team_id)}</div>
-                    <div class="team-stat">BTTS: ${pred.btts_prediction ? 'YES' : 'NO'} (${((pred.btts_probability || 0) * 100).toFixed(1)}%)</div>
+        if (recentList.length === 0) {
+            document.getElementById('recentPredictions').innerHTML = `
+                <div id="recentLoader" class="recent-loader"></div>
+                <p class="loading">No predictions yet. Make one to see it here.</p>
+            `;
+            startRecentLoader();
+        } else {
+            stopRecentLoader();
+            const names = await Promise.all(recentList.map(async p => {
+                const hn = await resolveTeamName(p.home_team_id);
+                const an = await resolveTeamName(p.away_team_id);
+                return { hn, an, p };
+            }));
+            const recentPredictionsHtml = names.map(({ hn, an, p }) => `
+                <div class="prediction-item">
+                    <div class="team-info">
+                        <div class="team-name">${hn} vs ${an}</div>
+                        <div class="team-stat">BTTS: ${p.btts_prediction ? 'YES' : 'NO'} (${((p.btts_probability || 0) * 100).toFixed(1)}%)</div>
+                    </div>
                 </div>
-            </div>
-        `).join('');
-        document.getElementById('recentPredictions').innerHTML = recentPredictionsHtml;
-    }
+            `).join('');
+            document.getElementById('recentPredictions').innerHTML = recentPredictionsHtml;
+        }
 
     } catch (error) {
         console.error(' Dashboard loading error:', error);
@@ -301,14 +339,24 @@ async function makePrediction() {
         startLoader();
         currentPredictController = new AbortController();
 
+        try {
+            await Promise.all([
+                API.getTeamStats(homeTeamId, season),
+                API.getTeamStats(awayTeamId, season)
+            ]);
+        } catch (_) {}
+
         const result = await API.predictBTTS(homeTeamId, awayTeamId, pendingFixtureId, season, modelType, currentPredictController.signal);
         pendingFixtureId = null; // Clear after use
 
         currentPrediction = result;
         await displayPredictionResult(result);
 
-        // Refresh dashboard so Recent Predictions, Top Teams, and charts update
-        loadDashboard();
+        updateRecentPredictionsInstant(homeTeamId, awayTeamId, result && result.prediction ? result.prediction : {});
+
+        // Refresh dashboard and history so Recent Predictions and History update
+        await loadDashboard();
+        await loadPredictionHistory();
 
         document.getElementById('predictBtn').disabled = false;
         document.getElementById('predictBtn').textContent = 'Predict BTTS';
@@ -338,6 +386,25 @@ async function makePrediction() {
     }
 }
 
+function updateRecentPredictionsInstant(homeId, awayId, pred) {
+    const container = document.getElementById('recentPredictions');
+    if (!container) return;
+    const item = `
+        <div class="prediction-item">
+            <div class="team-info">
+                <div class="team-name">${getTeamName(homeId)} vs ${getTeamName(awayId)}</div>
+                <div class="team-stat">BTTS: ${pred && pred.btts_prediction ? 'YES' : 'NO'} (${(((pred && pred.btts_probability) || 0) * 100).toFixed(1)}%)</div>
+            </div>
+        </div>
+    `;
+    stopRecentLoader();
+    container.innerHTML = item + container.innerHTML;
+    // Resolve and update names asynchronously if placeholders were used
+    Promise.all([resolveTeamName(homeId), resolveTeamName(awayId)]).then(([hn, an]) => {
+        const firstItem = container.querySelector('.prediction-item .team-name');
+        if (firstItem) firstItem.textContent = `${hn} vs ${an}`;
+    }).catch(() => {});
+}
 function safeNum(val, decimals = 1) {
     const n = parseFloat(val);
     return (typeof n === 'number' && !isNaN(n)) ? n.toFixed(decimals) : '--';
@@ -853,6 +920,8 @@ async function loadPredictionHistory() {
 
         if (predictions.length === 0) {
             document.getElementById('historyTable').innerHTML = '<p class="loading">No prediction history</p>';
+            document.getElementById('loadHistoryBtn').disabled = false;
+            document.getElementById('loadHistoryBtn').textContent = 'Load History';
             return;
         }
 
