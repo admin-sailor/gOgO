@@ -572,19 +572,8 @@ async function displayPredictionResult(result) {
     } catch (_) {}
     const homePos = standingsMap[homeTeamId];
     const awayPos = standingsMap[awayTeamId];
-    const homePosText = homePos ? `· ${ordinal(homePos)}` : '';
-    const awayPosText = awayPos ? `· ${ordinal(awayPos)}` : '';
-    const oddsMap = result.btts_odds || null;
-    const findOdd = (map, label) => {
-        if (!map) return null;
-        const entry = Object.entries(map).find(([k]) => (k || '').toLowerCase().includes(label));
-        return entry ? entry[1] : null;
-    };
-    const yesOdd = findOdd(oddsMap, 'yes');
-    const noOdd = findOdd(oddsMap, 'no');
-    const oddsText = (yesOdd || noOdd) ? ` · BTTS Yes ${yesOdd || '-'} | No ${noOdd || '-'}` : '';
-    document.getElementById('homeTeamPosition').textContent = `${homePosText}${oddsText}`;
-    document.getElementById('awayTeamPosition').textContent = `${awayPosText}${oddsText}`;
+    document.getElementById('homeTeamPosition').textContent = homePos ? `· ${ordinal(homePos)}` : '';
+    document.getElementById('awayTeamPosition').textContent = awayPos ? `· ${ordinal(awayPos)}` : '';
 
     // Update prediction - safe formatting to prevent NaN
     const bttsProb = safeNum((prediction.btts_probability || 0) * 100, 1);
@@ -649,29 +638,6 @@ async function displayPredictionResult(result) {
     if (cards) {
         cards.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
-    // Key insight: use Gemini text for fixture predictions, else heuristic
-    try {
-        const target = document.getElementById('analysisInsight');
-        if (target) {
-            const heuristic = target.textContent;
-            const aiText = (result && result.fixture_id && result.ai_review) ? String(result.ai_review) : '';
-            if (!aiText) {
-                target.textContent = heuristic || target.textContent;
-            } else {
-                target.textContent = '';
-                let i = 0;
-                const speed = 12;
-                const timer = setInterval(() => {
-                    target.textContent += aiText[i];
-                    i += 1;
-                    if (i >= aiText.length) {
-                        clearInterval(timer);
-                    }
-                }, speed);
-            }
-        }
-    } catch (_) {}
 }
 
 function renderForm(matches, teamId, elementId) {

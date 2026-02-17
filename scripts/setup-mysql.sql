@@ -89,6 +89,3 @@ ALTER TABLE `predictions` ADD COLUMN `user_id` VARCHAR(64) NULL;
 ALTER TABLE `predictions` DROP INDEX `uq_predictions_fixture`;
 CREATE UNIQUE INDEX `uq_predictions_fixture_user` ON `predictions` (`fixture_id`, `user_id`);
 CREATE INDEX `predictions_user_idx` ON `predictions` (`user_id`);
-
--- AI review caching on fixtures
-ALTER TABLE `fixtures` ADD COLUMN `ai_review` TEXT NULL;

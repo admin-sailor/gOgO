@@ -1,9 +1,7 @@
 from flask import Blueprint, jsonify, request, current_app
-from config import FOOTBALL_API_KEY, GEMINI_API_KEY, API_FOOTBALL_KEY
+from config import FOOTBALL_API_KEY
 import logging
 import numpy as np
-import requests
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 api_bp = Blueprint('api', __name__)
@@ -134,104 +132,6 @@ def predict_btts():
         except Exception as e:
             logger.info(f"Team upsert skipped: {e}")
         db.store_prediction(home_team_id, away_team_id, fixture_id, prediction, user_id=user_id)
-        ai_review = None
-        if fixture_id:
-            fx = db.get_fixture_info(fixture_id)
-            ai_review = fx.get('ai_review') if fx else None
-            if not ai_review and GEMINI_API_KEY:
-                odds_btts = None
-                try:
-                    if API_FOOTBALL_KEY and fx:
-                        match_dt = fx.get('utc_date')
-                        iso_date = None
-                        if isinstance(match_dt, str):
-                            iso_date = match_dt[:10]
-                        elif isinstance(match_dt, datetime):
-                            iso_date = match_dt.date().isoformat()
-                        # Resolve team names via our teams table cache
-                        home_info = football_client.get_team_info(home_team_id)
-                        away_info = football_client.get_team_info(away_team_id)
-                        # Attempt to fetch odds from API-Football
-                        def _api_req(url, params=None):
-                            headers = {'x-apisports-key': API_FOOTBALL_KEY}
-                            return requests.get(url, params=params or {}, headers=headers, timeout=10)
-                        # Find team IDs
-                        hid = None; aid = None
-                        try:
-                            r1 = _api_req('https://v3.football.api-sports.io/teams', {'search': home_info.get('name')})
-                            if r1.ok and r1.json().get('response'):
-                                hid = r1.json()['response'][0]['team']['id']
-                            r2 = _api_req('https://v3.football.api-sports.io/teams', {'search': away_info.get('name')})
-                            if r2.ok and r2.json().get('response'):
-                                aid = r2.json()['response'][0]['team']['id']
-                        except Exception:
-                            pass
-                        # Find fixture on same date
-                        fid_api = None
-                        try:
-                            if hid and aid and iso_date:
-                                rf = _api_req('https://v3.football.api-sports.io/fixtures', {'team': hid, 'date': iso_date})
-                                if rf.ok:
-                                    for item in rf.json().get('response', []):
-                                        opp = item.get('teams', {}).get('away', {}).get('id')
-                                        if opp == aid:
-                                            fid_api = item.get('fixture', {}).get('id')
-                                            break
-                        except Exception:
-                            pass
-                        # Get BTTS odds
-                        try:
-                            if fid_api:
-                                ro = _api_req('https://v3.football.api-sports.io/odds', {'fixture': fid_api})
-                                if ro.ok:
-                                    resp = ro.json().get('response', [])
-                                    # naive scan for btts market
-                                    for book in resp:
-                                        for bet in book.get('bookmakers', []):
-                                            for market in bet.get('bets', []):
-                                                if 'Both Teams to Score' in (market.get('name') or ''):
-                                                    # pick average or first
-                                                    values = market.get('values') or []
-                                                    odds_btts = {v.get('value'): v.get('odd') for v in values}
-                                                    raise StopIteration
-                        except StopIteration:
-                            pass
-                        except Exception:
-                            pass
-                except Exception as e:
-                    logger.info(f"API-Football odds fetch skipped: {e}")
-                try:
-                    prompt = {
-                        'role': 'system',
-                        'content': 'Act as a Professional Football Data Analyst. Provide an authoritative BTTS assessment.'
-                    }
-                    story = f"""
-Fixture: {home_info.get('name') if 'home_info' in locals() and home_info else home_team_id} vs {away_info.get('name') if 'away_info' in locals() and away_info else away_team_id}
-Season: {season}
-BTTS model probability: {round((prediction.get('btts_probability') or 0)*100,1)}%
-Home stats: goals/game {home_stats.get('goals_per_game')}, conceded/game {home_stats.get('goals_conceded_per_game')}, DFI {home_stats.get('defensive_fragility_index')}, clean sheets {home_stats.get('clean_sheet_frequency')}
-Away stats: goals/game {away_stats.get('goals_per_game')}, conceded/game {away_stats.get('goals_conceded_per_game')}, DFI {away_stats.get('defensive_fragility_index')}, clean sheets {away_stats.get('clean_sheet_frequency')}
-Odds (BTTS) from API-Football: {odds_btts or 'Unavailable'}
-Task: Decide GG (Yes/No) with risk rating and suggest confluence markets on betting apps (e.g., BTTS+Over 2.5, BTTS+Corners, BTTS+Cards) with short rationale. Keep to 4-6 bullet points.
-"""
-                    payload = {
-                        "contents": [
-                            {"parts": [{"text": prompt['content']}]},
-                            {"parts": [{"text": story}]}
-                        ]
-                    }
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-                    gr = requests.post(url, json=payload, timeout=15)
-                    if gr.ok:
-                        out = gr.json()
-                        try:
-                            ai_review = out['candidates'][0]['content']['parts'][0]['text']
-                        except Exception:
-                            ai_review = None
-                    if ai_review:
-                        db.set_fixture_ai_review(fixture_id, ai_review)
-                except Exception as e:
-                    logger.info(f"Gemini generation skipped: {e}")
         return jsonify({
             'prediction': prediction,
             'indicators': btts_indicators,
@@ -239,10 +139,7 @@ Task: Decide GG (Yes/No) with risk rating and suggest confluence markets on bett
             'away_stats': away_stats,
             'home_last_5': home_last_5,
             'away_last_5': away_last_5,
-            'h2h_matches': h2h_last_5,
-            'ai_review': ai_review,
-            'fixture_id': fixture_id,
-            'btts_odds': odds_btts if fixture_id else None
+            'h2h_matches': h2h_last_5
         })
     except Exception as e:
         logger.error(f"Error making prediction: {e}")
