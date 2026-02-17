@@ -334,7 +334,7 @@ async function loadDashboard() {
         const recentPredictionsHtml = recentList.map(pred => `
             <div class="prediction-item">
                 <div class="team-info">
-                    <div class="team-name">${getTeamName(pred.home_team_id)} vs ${getTeamName(pred.away_team_id)}</div>
+                    <div class="team-name">${pred.home_team_name || getTeamName(pred.home_team_id)} vs ${pred.away_team_name || getTeamName(pred.away_team_id)}</div>
                     <div class="team-stat">BTTS: ${pred.btts_prediction ? 'YES' : 'NO'} (${((pred.btts_probability || 0) * 100).toFixed(1)}%)</div>
                 </div>
             </div>
@@ -977,8 +977,8 @@ async function loadPredictionHistory() {
             html += `
                 <tr>
                     <td>${date}</td>
-                    <td>${getTeamName(pred.home_team_id)}</td>
-                    <td>${getTeamName(pred.away_team_id)}</td>
+                    <td>${pred.home_team_name || getTeamName(pred.home_team_id)}</td>
+                    <td>${pred.away_team_name || getTeamName(pred.away_team_id)}</td>
                     <td>${bttsYesNo}</td>
                     <td>${probability}%</td>
                     <td>${confidence}%</td>

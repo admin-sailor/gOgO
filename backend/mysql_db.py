@@ -267,12 +267,28 @@ class MySQLDB:
             if user_id:
                 cur.execute(
                     """
-                    SELECT id, fixture_id, home_team_id, away_team_id,
-                           btts_probability, btts_prediction, confidence,
-                           model_type, odds, created_at
-                    FROM predictions
-                    WHERE user_id = %s
-                    ORDER BY created_at DESC
+                    SELECT 
+                        p.id,
+                        p.fixture_id,
+                        p.home_team_id,
+                        p.away_team_id,
+                        t1.name AS home_team_name,
+                        t2.name AS away_team_name,
+                        t1.short_name AS home_short_name,
+                        t2.short_name AS away_short_name,
+                        t1.crest AS home_crest,
+                        t2.crest AS away_crest,
+                        p.btts_probability,
+                        p.btts_prediction,
+                        p.confidence,
+                        p.model_type,
+                        p.odds,
+                        p.created_at
+                    FROM predictions p
+                    LEFT JOIN teams t1 ON p.home_team_id = t1.id
+                    LEFT JOIN teams t2 ON p.away_team_id = t2.id
+                    WHERE p.user_id = %s
+                    ORDER BY p.created_at DESC
                     LIMIT %s
                     """,
                     (user_id, int(limit))
@@ -280,11 +296,27 @@ class MySQLDB:
             else:
                 cur.execute(
                     """
-                    SELECT id, fixture_id, home_team_id, away_team_id,
-                           btts_probability, btts_prediction, confidence,
-                           model_type, odds, created_at
-                    FROM predictions
-                    ORDER BY created_at DESC
+                    SELECT 
+                        p.id,
+                        p.fixture_id,
+                        p.home_team_id,
+                        p.away_team_id,
+                        t1.name AS home_team_name,
+                        t2.name AS away_team_name,
+                        t1.short_name AS home_short_name,
+                        t2.short_name AS away_short_name,
+                        t1.crest AS home_crest,
+                        t2.crest AS away_crest,
+                        p.btts_probability,
+                        p.btts_prediction,
+                        p.confidence,
+                        p.model_type,
+                        p.odds,
+                        p.created_at
+                    FROM predictions p
+                    LEFT JOIN teams t1 ON p.home_team_id = t1.id
+                    LEFT JOIN teams t2 ON p.away_team_id = t2.id
+                    ORDER BY p.created_at DESC
                     LIMIT %s
                     """,
                     (int(limit),)

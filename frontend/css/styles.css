@@ -675,7 +675,7 @@ select:hover {
     z-index: 50;
     display: none;
     overflow-y: auto;
-    height: 130px;
+    height: 160px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: var(--accent-purple) var(--bg-tertiary);
