@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from config import CORS_ORIGINS
-from data_client import FootballDataClient, FeatureEngineer, AggregatedDataSource
+from data_client import FootballDataClient, FeatureEngineer, AggregatedDataSource, ApiFootballClient
 from ml_models import BTTSPredictor
 from mysql_db import MySQLDB
 import os
@@ -18,11 +18,13 @@ def create_app():
     predictor = BTTSPredictor()
     db = MySQLDB()
     aggregated_source = AggregatedDataSource(os.path.join(os.path.dirname(__file__), 'football_data.aggregated_data.json'))
+    odds_client = ApiFootballClient()
     app.config['football_client'] = football_client
     app.config['feature_engineer'] = feature_engineer
     app.config['predictor'] = predictor
     app.config['db'] = db
     app.config['aggregated_source'] = aggregated_source
+    app.config['odds_client'] = odds_client
     try:
         from .blueprints.api import api_bp
     except ImportError:
