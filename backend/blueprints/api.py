@@ -241,7 +241,8 @@ Task: Decide GG (Yes/No) with risk rating and suggest confluence markets on bett
             'away_last_5': away_last_5,
             'h2h_matches': h2h_last_5,
             'ai_review': ai_review,
-            'fixture_id': fixture_id
+            'fixture_id': fixture_id,
+            'btts_odds': odds_btts if fixture_id else None
         })
     except Exception as e:
         logger.error(f"Error making prediction: {e}")

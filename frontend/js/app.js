@@ -572,8 +572,19 @@ async function displayPredictionResult(result) {
     } catch (_) {}
     const homePos = standingsMap[homeTeamId];
     const awayPos = standingsMap[awayTeamId];
-    document.getElementById('homeTeamPosition').textContent = homePos ? `· ${ordinal(homePos)}` : '';
-    document.getElementById('awayTeamPosition').textContent = awayPos ? `· ${ordinal(awayPos)}` : '';
+    const homePosText = homePos ? `· ${ordinal(homePos)}` : '';
+    const awayPosText = awayPos ? `· ${ordinal(awayPos)}` : '';
+    const oddsMap = result.btts_odds || null;
+    const findOdd = (map, label) => {
+        if (!map) return null;
+        const entry = Object.entries(map).find(([k]) => (k || '').toLowerCase().includes(label));
+        return entry ? entry[1] : null;
+    };
+    const yesOdd = findOdd(oddsMap, 'yes');
+    const noOdd = findOdd(oddsMap, 'no');
+    const oddsText = (yesOdd || noOdd) ? ` · BTTS Yes ${yesOdd || '-'} | No ${noOdd || '-'}` : '';
+    document.getElementById('homeTeamPosition').textContent = `${homePosText}${oddsText}`;
+    document.getElementById('awayTeamPosition').textContent = `${awayPosText}${oddsText}`;
 
     // Update prediction - safe formatting to prevent NaN
     const bttsProb = safeNum((prediction.btts_probability || 0) * 100, 1);
