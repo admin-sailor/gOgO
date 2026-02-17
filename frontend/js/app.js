@@ -638,28 +638,24 @@ async function displayPredictionResult(result) {
     if (cards) {
         cards.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-
-    // AI Insights typing animation (fixtures only)
+    
+    // Key insight: use Gemini text for fixture predictions, else heuristic
     try {
-        const text = (result.fixture_id && result.ai_review) ? String(result.ai_review) : '';
-        const box = document.getElementById('aiInsights');
-        const cursor = document.getElementById('aiInsightsTyping');
-        const output = document.getElementById('aiInsightsText');
-        if (box && output && cursor) {
-            output.textContent = '';
-            cursor.style.display = 'block';
-            if (!text) {
-                cursor.style.display = 'none';
-                output.textContent = 'AI insights available for fixture-linked predictions only.';
+        const target = document.getElementById('analysisInsight');
+        if (target) {
+            const heuristic = target.textContent;
+            const aiText = (result && result.fixture_id && result.ai_review) ? String(result.ai_review) : '';
+            if (!aiText) {
+                target.textContent = heuristic || target.textContent;
             } else {
+                target.textContent = '';
                 let i = 0;
-                const speed = 15;
+                const speed = 12;
                 const timer = setInterval(() => {
-                    output.textContent += text[i];
+                    target.textContent += aiText[i];
                     i += 1;
-                    if (i >= text.length) {
+                    if (i >= aiText.length) {
                         clearInterval(timer);
-                        cursor.style.display = 'none';
                     }
                 }, speed);
             }
