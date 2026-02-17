@@ -321,8 +321,8 @@ async function loadDashboard() {
             console.warn(' Predictions not available:', e.message);
         }
 
-        // Recent Predictions
-        const recentList = predList.slice(0, 5);
+        // Recent Predictions (show all, scrollbar provided via CSS)
+        const recentList = predList;
     if (recentList.length === 0) {
         document.getElementById('recentPredictions').innerHTML = `
             <div id="recentLoader" class="recent-loader"></div>

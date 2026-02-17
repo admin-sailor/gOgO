@@ -83,7 +83,7 @@ class API {
         return this.request(`/fixtures/upcoming?competition=${competition}&days=${days}`);
     }
 
-    static async getPredictionsHistory(limit = 100) {
+    static async getPredictionsHistory(limit = 500) {
         const q = encodeURIComponent(CLIENT_ID);
         return this.request(`/predictions/history?limit=${limit}&user_id=${q}`);
     }

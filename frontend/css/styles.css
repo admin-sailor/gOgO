@@ -517,6 +517,21 @@ body {
 .teams-list, .predictions-list, .leagues-list {
     max-height: 400px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-color) transparent;
+    -ms-overflow-style: auto;
+}
+
+.predictions-list::-webkit-scrollbar {
+    width: 6px;
+}
+.predictions-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.predictions-list::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-color);
+    border-radius: 4px;
 }
 
 .team-item, .prediction-item, .league-item {
