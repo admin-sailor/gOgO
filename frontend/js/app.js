@@ -1,5 +1,4 @@
 let teams = [];
-let teamNameCache = {};
 let currentPrediction = null;
 let dashboardData = null;
 let selectedLeague = 'PL'; // Track selected league
@@ -19,7 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeEventListeners();
     initializeSectionFromStorage();
     initializeImageProtection();
-    try { const s = localStorage.getItem('team_name_cache'); teamNameCache = s ? (JSON.parse(s) || {}) : {}; } catch (_) { teamNameCache = {}; }
     const predictBtn = document.getElementById('predictBtn');
     if (predictBtn) predictBtn.disabled = true;
     await populateLeaguesFromDataset();
@@ -240,7 +238,6 @@ async function loadTeams(leagueCode) {
         const response = await API.getTeams(leagueCode);
         teams = response.teams || [];
         console.log(' Teams loaded:', teams.length);
-        try { for (const t of teams) { if (t && t.id) { teamNameCache[t.id] = t.name || teamNameCache[t.id]; } } localStorage.setItem('team_name_cache', JSON.stringify(teamNameCache)); } catch (_) {}
 
         // Populate dropdowns
         const teamOptions = teams.map(team => 
@@ -284,10 +281,7 @@ async function loadTeams(leagueCode) {
 }
 
 function getTeamName(teamId) {
-    const id = parseInt(teamId);
-    const cached = teamNameCache[id];
-    if (cached) return cached;
-    const team = teams.find(t => t.id === id);
+    const team = teams.find(t => t.id === teamId || t.id === parseInt(teamId));
     return team?.name || `Team ${teamId}`;
 }
 
@@ -326,7 +320,6 @@ async function loadDashboard() {
         } catch (e) {
             console.warn(' Predictions not available:', e.message);
         }
-        try { for (const p of predList) { if (p && p.home_team_id && p.home_team_name) { teamNameCache[p.home_team_id] = p.home_team_name; } if (p && p.away_team_id && p.away_team_name) { teamNameCache[p.away_team_id] = p.away_team_name; } } localStorage.setItem('team_name_cache', JSON.stringify(teamNameCache)); } catch (_) {}
 
         // Recent Predictions
         const recentList = predList.slice(0, 5);
