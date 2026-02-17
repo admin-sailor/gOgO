@@ -648,7 +648,7 @@ select:hover {
 }
 
 .select-expanded {
-    max-height: 140px;
+    max-height: 240px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
