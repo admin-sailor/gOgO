@@ -638,6 +638,33 @@ async function displayPredictionResult(result) {
     if (cards) {
         cards.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    // AI Insights typing animation (fixtures only)
+    try {
+        const text = (result.fixture_id && result.ai_review) ? String(result.ai_review) : '';
+        const box = document.getElementById('aiInsights');
+        const cursor = document.getElementById('aiInsightsTyping');
+        const output = document.getElementById('aiInsightsText');
+        if (box && output && cursor) {
+            output.textContent = '';
+            cursor.style.display = 'block';
+            if (!text) {
+                cursor.style.display = 'none';
+                output.textContent = 'AI insights available for fixture-linked predictions only.';
+            } else {
+                let i = 0;
+                const speed = 15;
+                const timer = setInterval(() => {
+                    output.textContent += text[i];
+                    i += 1;
+                    if (i >= text.length) {
+                        clearInterval(timer);
+                        cursor.style.display = 'none';
+                    }
+                }, speed);
+            }
+        }
+    } catch (_) {}
 }
 
 function renderForm(matches, teamId, elementId) {

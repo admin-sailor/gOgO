@@ -259,6 +259,45 @@ class MySQLDB:
         except Error as e:
             logger.error(f"Error caching fixtures: {e}")
 
+    def get_fixture_info(self, fixture_id: int) -> Optional[Dict]:
+        """Get fixture info including ai_review"""
+        try:
+            conn = self._get_conn()
+            cur = conn.cursor(dictionary=True)
+            cur.execute(
+                """
+                SELECT fixture_id, competition_code, home_team_id, away_team_id, `utc_date`, `status`, ai_review
+                FROM fixtures
+                WHERE fixture_id = %s
+                """,
+                (fixture_id,)
+            )
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+            return row
+        except Error as e:
+            logger.error(f"Error fetching fixture info: {e}")
+            return None
+
+    def set_fixture_ai_review(self, fixture_id: int, ai_text: str):
+        """Save AI review text for a fixture"""
+        try:
+            conn = self._get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                """
+                UPDATE fixtures
+                SET ai_review = %s
+                WHERE fixture_id = %s
+                """,
+                (ai_text, fixture_id)
+            )
+            cur.close()
+            conn.close()
+        except Error as e:
+            logger.error(f"Error updating ai_review for fixture {fixture_id}: {e}")
+
     def get_prediction_history(self, limit: int = 100, user_id: Optional[str] = None) -> List[Dict]:
         """Get prediction history"""
         try:

@@ -1096,6 +1096,38 @@ h1, h2, h3, h4 {
     grid-column: 1 / -1;
 }
 
+/* AI Insights */
+.ai-insights {
+    margin-top: 1rem;
+}
+.ai-insights-box {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    min-height: 48px;
+    position: relative;
+    overflow: hidden;
+}
+.ai-insights-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.4;
+    color: var(--text-primary);
+}
+.typing-cursor {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 2px;
+    height: 18px;
+    background: var(--text-primary);
+    animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
 .analysis-label {
     display: block;
     font-size: 0.8rem;
