@@ -102,7 +102,6 @@ def predict_btts():
         model_type = data.get('model', 'ensemble')
         user_id = data.get('user_id')
         football_client, feature_engineer, predictor, db, _ = _clients()
-        odds_client = current_app.config.get('odds_client')
         home_matches = football_client.get_team_matches(home_team_id, season)
         away_matches = football_client.get_team_matches(away_team_id, season)
         home_stats = feature_engineer.calculate_team_stats(home_matches, home_team_id, is_home=None)
@@ -132,16 +131,7 @@ def predict_btts():
             db.upsert_team(away_team_id, away_info.get('name'), away_info.get('shortName'), away_info.get('crest'), None)
         except Exception as e:
             logger.info(f"Team upsert skipped: {e}")
-        odds_info = {}
-        yes_odds = None
-        try:
-            season_safe = season if season else '2024'
-            if odds_client:
-                odds_info = odds_client.get_btts_odds(home_info.get('name'), away_info.get('name'), season_safe) or {}
-                yes_odds = odds_info.get('btts_yes')
-        except Exception as e:
-            logger.info(f"Odds fetch skipped: {e}")
-        db.store_prediction(home_team_id, away_team_id, fixture_id, prediction, user_id=user_id, odds=yes_odds)
+        db.store_prediction(home_team_id, away_team_id, fixture_id, prediction, user_id=user_id)
         return jsonify({
             'prediction': prediction,
             'indicators': btts_indicators,
@@ -149,8 +139,7 @@ def predict_btts():
             'away_stats': away_stats,
             'home_last_5': home_last_5,
             'away_last_5': away_last_5,
-            'h2h_matches': h2h_last_5,
-            'odds': odds_info
+            'h2h_matches': h2h_last_5
         })
     except Exception as e:
         logger.error(f"Error making prediction: {e}")

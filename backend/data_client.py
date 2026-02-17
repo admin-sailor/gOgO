@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import logging
 from config import FOOTBALL_API_KEY, FOOTBALL_API_BASE_URL, SEASONS
-from config import API_FOOTBALL_KEY, API_FOOTBALL_BASE_URL
 import json
 import os
 
@@ -597,81 +596,3 @@ class AggregatedDataSource:
         if self.df.empty:
             return 0
         return int(self.df['season_year'].max())
-
-class ApiFootballClient:
-    def __init__(self):
-        self.base_url = API_FOOTBALL_BASE_URL
-        self.headers = {'x-apisports-key': API_FOOTBALL_KEY} if API_FOOTBALL_KEY else {}
-
-    def _get(self, endpoint: str, params: Dict = None) -> Dict:
-        try:
-            if not API_FOOTBALL_KEY:
-                return {}
-            url = f"{self.base_url}/{endpoint}"
-            r = requests.get(url, headers=self.headers, params=params, timeout=12)
-            r.raise_for_status()
-            return r.json()
-        except Exception as e:
-            logger.info(f"API-FOOTBALL request failed: {e}")
-            return {}
-
-    def search_team(self, name: str) -> Optional[int]:
-        data = self._get('teams', {'search': name})
-        for item in (data.get('response') or []):
-            team = item.get('team') or {}
-            if team.get('id'):
-                return int(team['id'])
-        return None
-
-    def upcoming_for_team(self, team_id: int, season: str = None, next_count: int = 15) -> List[Dict]:
-        params = {'team': team_id, 'next': next_count}
-        if season and str(season).isdigit():
-            params['season'] = int(season)
-        data = self._get('fixtures', params)
-        return data.get('response') or []
-
-    def find_fixture_id(self, home_name: str, away_name: str, season: str = None) -> Optional[int]:
-        hid = self.search_team(home_name)
-        aid = self.search_team(away_name)
-        if not hid or not aid:
-            return None
-        upcoming = self.upcoming_for_team(hid, season=season)
-        for fix in upcoming:
-            teams = fix.get('teams') or {}
-            home = (teams.get('home') or {}).get('id')
-            away = (teams.get('away') or {}).get('id')
-            if int(home or -1) == hid and int(away or -1) == aid:
-                return int((fix.get('fixture') or {}).get('id') or 0) or None
-        return None
-
-    def get_btts_odds(self, home_name: str, away_name: str, season: str = None) -> Dict:
-        try:
-            fixture_id = self.find_fixture_id(home_name, away_name, season)
-            if not fixture_id:
-                return {}
-            data = self._get('odds', {'fixture': fixture_id})
-            yes_price = None
-            no_price = None
-            bookmaker_name = None
-            for entry in (data.get('response') or []):
-                bookmaker_name = (entry.get('bookmaker') or {}).get('name') or bookmaker_name
-                for market in (entry.get('bets') or []):
-                    mname = (market.get('name') or '').lower()
-                    if 'both' in mname and 'score' in mname:
-                        for val in (market.get('values') or []):
-                            label = (val.get('value') or '').lower()
-                            odd = val.get('odd')
-                            if label in ('yes', 'gg', 'both teams to score: yes'):
-                                try:
-                                    yes_price = float(odd)
-                                except Exception:
-                                    pass
-                            elif label in ('no', 'ng', 'both teams to score: no'):
-                                try:
-                                    no_price = float(odd)
-                                except Exception:
-                                    pass
-            return {'fixture_id': fixture_id, 'bookmaker': bookmaker_name, 'btts_yes': yes_price, 'btts_no': no_price}
-        except Exception as e:
-            logger.info(f"Failed to fetch odds: {e}")
-            return {}

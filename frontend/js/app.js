@@ -588,21 +588,6 @@ async function displayPredictionResult(result) {
     const confVal = Math.max(0, Math.min(100, (parseFloat(prediction.confidence || 0) * 100)));
     const confEl = document.getElementById('confidenceFill');
     if (confEl) confEl.style.width = confVal + '%';
-    const odds = result.odds || {};
-    const yesOdd = odds.btts_yes;
-    const noOdd = odds.btts_no;
-    const bm = odds.bookmaker || '';
-    const oddsEl = document.getElementById('bttsOdds');
-    if (oddsEl) {
-        if (yesOdd || noOdd) {
-            const parts = [];
-            if (yesOdd) parts.push(`YES ${safeNum(yesOdd, 2)}`);
-            if (noOdd) parts.push(`NO ${safeNum(noOdd, 2)}`);
-            oddsEl.textContent = parts.join(' · ') + (bm ? ` (${bm})` : '');
-        } else {
-            oddsEl.textContent = '--';
-        }
-    }
 
     // Model comparison - always set (-- when not available)
     document.getElementById('lrProb').textContent = prediction.lr_probability != null

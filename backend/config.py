@@ -7,9 +7,6 @@ load_dotenv()
 FOOTBALL_API_KEY = os.getenv('FOOTBALL_API_KEY')
 FOOTBALL_API_BASE_URL = 'https://api.football-data.org/v4'
 
-API_FOOTBALL_KEY = os.getenv('API_FOOTBALL_KEY')
-API_FOOTBALL_BASE_URL = os.getenv('API_FOOTBALL_BASE_URL', 'https://v3.football.api-sports.io')
-
 # Supabase
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
