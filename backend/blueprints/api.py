@@ -163,9 +163,44 @@ def get_predictions_history():
     try:
         limit = int(request.args.get('limit', 100))
         user_id = request.args.get('user_id')
-        _, _, _, db, _ = _clients()
-        predictions = db.get_prediction_history(limit, user_id=user_id)
-        return jsonify({'predictions': predictions, 'count': len(predictions)})
+        football_client, _, _, db, _ = _clients()
+        predictions = db.get_prediction_history(limit, user_id=user_id) or []
+        enriched = []
+        for row in predictions:
+            home_id = row.get('home_team_id')
+            away_id = row.get('away_team_id')
+            hname = row.get('home_team_name')
+            aname = row.get('away_team_name')
+            hcrest = row.get('home_crest')
+            acrest = row.get('away_crest')
+            if not hname or not hcrest:
+                try:
+                    info = football_client.get_team_info(home_id)
+                    hname = hname or info.get('name')
+                    hcrest = hcrest or info.get('crest')
+                    try:
+                        db.upsert_team(home_id, info.get('name'), info.get('shortName'), info.get('crest'), None)
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+            if not aname or not acrest:
+                try:
+                    info = football_client.get_team_info(away_id)
+                    aname = aname or info.get('name')
+                    acrest = acrest or info.get('crest')
+                    try:
+                        db.upsert_team(away_id, info.get('name'), info.get('shortName'), info.get('crest'), None)
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+            row['home_team_name'] = hname or row.get('home_team_name') or f"Team {home_id}"
+            row['away_team_name'] = aname or row.get('away_team_name') or f"Team {away_id}"
+            row['home_crest'] = hcrest or row.get('home_crest')
+            row['away_crest'] = acrest or row.get('away_crest')
+            enriched.append(row)
+        return jsonify({'predictions': enriched, 'count': len(enriched)})
     except Exception as e:
         logger.error(f"Error fetching predictions: {e}")
         return jsonify({'error': str(e)}), 400
