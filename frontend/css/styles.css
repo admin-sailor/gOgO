@@ -519,7 +519,7 @@ body {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-color) transparent;
+    scrollbar-color: var(--accent-purple) transparent;
     -ms-overflow-style: auto;
 }
 
