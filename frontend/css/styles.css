@@ -1718,8 +1718,9 @@ tbody tr:hover {
 .toast {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
     width: 60%;
+    max-width: auto;
     background-color: rgba(0,0,0,0.5);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
@@ -1730,7 +1731,7 @@ tbody tr:hover {
     transform: translateX(24px);
     opacity: 0;
     transition: transform 0.25s ease, opacity 0.25s ease;
-    height: 36px;
+    height: auto;
 }
 .toast-success {
     background-color: #1f4d00;
@@ -1772,8 +1773,8 @@ tbody tr:hover {
     /* margin-right: 6px; */
 }
 .toast-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 11px;
+    height: 11px;
     display: block;
 }
 .toast-message {
@@ -1782,6 +1783,8 @@ tbody tr:hover {
     display: flex;
     align-items: center;
     line-height: 18px;
+    white-space: normal;
+    word-break: break-word;
 }
 
 /* Theme: Light */
