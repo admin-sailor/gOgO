@@ -29,7 +29,7 @@ def test():
                 'message': 'FOOTBALL_API_KEY is not configured or is still a placeholder',
                 'instruction': 'Please update /backend/.env with your actual API key from https://www.football-data.org/client'
             }), 400
-        football_client, _, _, _, _ = _clients()
+        football_client, _, _, _, _, _ = _clients()
         test_response = football_client._get('competitions')
         if test_response:
             return jsonify({
@@ -58,7 +58,7 @@ def get_teams():
                 'message': 'Please set FOOTBALL_API_KEY in /backend/.env',
                 'teams': []
             }), 400
-        football_client, _, _, _, _ = _clients()
+        football_client, _, _, _, _, _ = _clients()
         logger.info(f"Fetching teams for competition: {competition}")
         teams = football_client.get_competition_teams(competition)
         logger.info(f"Successfully fetched {len(teams)} teams")
@@ -71,7 +71,7 @@ def get_teams():
 def get_team_stats(team_id):
     try:
         season = request.args.get('season', '2024')
-        football_client, feature_engineer, _, db, _ = _clients()
+        football_client, feature_engineer, _, db, _, _ = _clients()
         cached = db.get_cached_team_stats(team_id, season)
         if cached:
             return jsonify({'stats': cached, 'source': 'cache'})
@@ -105,7 +105,7 @@ def predict_btts():
         season = data.get('season', '2024')
         model_type = data.get('model', 'ensemble')
         user_id = data.get('user_id')
-        football_client, feature_engineer, predictor, db, _ = _clients()
+        football_client, feature_engineer, predictor, db, _, _ = _clients()
         home_matches = football_client.get_team_matches(home_team_id, season)
         away_matches = football_client.get_team_matches(away_team_id, season)
         home_stats = feature_engineer.calculate_team_stats(home_matches, home_team_id, is_home=None)
@@ -154,7 +154,7 @@ def get_upcoming_fixtures():
     try:
         competition = request.args.get('competition', 'PL')
         days = int(request.args.get('days', 30))
-        football_client, _, _, db, _ = _clients()
+        football_client, _, _, db, _, _ = _clients()
         fixtures = football_client.get_upcoming_fixtures(competition, days)
         db.cache_upcoming_fixtures(fixtures, competition)
         return jsonify({'fixtures': fixtures, 'count': len(fixtures)})
@@ -167,7 +167,7 @@ def get_predictions_history():
     try:
         limit = int(request.args.get('limit', 100))
         user_id = request.args.get('user_id')
-        football_client, _, _, db, _ = _clients()
+        football_client, _, _, db, _, _ = _clients()
         predictions = db.get_prediction_history(limit, user_id=user_id) or []
         enriched = []
         for row in predictions:
@@ -213,7 +213,7 @@ def get_predictions_history():
 def get_standings():
     try:
         competition = request.args.get('competition', 'PL')
-        football_client, _, _, _, _ = _clients()
+        football_client, _, _, _, _, _ = _clients()
         standings = football_client.get_standings(competition)
         return jsonify({'standings': standings, 'competition': competition})
     except Exception as e:
@@ -225,7 +225,7 @@ def get_head_to_head():
     try:
         team1_id = int(request.args.get('team1_id'))
         team2_id = int(request.args.get('team2_id'))
-        football_client, _, _, _, _ = _clients()
+        football_client, _, _, _, _, _ = _clients()
         h2h = football_client.get_head_to_head(team1_id, team2_id)
         return jsonify({'matches': h2h, 'count': len(h2h)})
     except Exception as e:
@@ -235,7 +235,7 @@ def get_head_to_head():
 @api_bp.route('/api/aggregated/leagues', methods=['GET'])
 def get_aggregated_leagues():
     try:
-        _, _, _, _, aggregated_source = _clients()
+        _, _, _, _, aggregated_source, _ = _clients()
         if aggregated_source.df.empty:
             return jsonify({'leagues': []})
         def normalize(name: str) -> str:
@@ -277,7 +277,7 @@ def aggregated_predict():
         unique_id = data.get('unique_id')
         if not unique_id:
             return jsonify({'error': 'unique_id is required'}), 400
-        _, _, predictor, _, aggregated_source = _clients()
+        _, _, predictor, _, aggregated_source, _ = _clients()
         row = aggregated_source.get_match_by_unique_id(unique_id)
         if row is None or row.empty:
             return jsonify({'error': 'Match not found in aggregated dataset'}), 404
