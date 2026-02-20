@@ -1,10 +1,12 @@
 from flask import Blueprint, jsonify, request, current_app
 from config import FOOTBALL_API_KEY
+from ai_analyzer import AIAnalyzer
 import logging
 import numpy as np
 
 logger = logging.getLogger(__name__)
 api_bp = Blueprint('api', __name__)
+ai_analyzer = AIAnalyzer()
 
 def _clients():
     app = current_app
@@ -315,6 +317,118 @@ def aggregated_predict():
     except Exception as e:
         logger.error(f"Error in aggregated prediction: {e}")
         return jsonify({'error': str(e)}), 500
+@api_bp.route('/api/ai/analyze-btts', methods=['POST'])
+def analyze_btts_ai():
+    """Generate AI-powered BTTS analysis using Google Generative AI"""
+    try:
+        data = request.json
+        home_team_id = data.get('home_team_id')
+        away_team_id = data.get('away_team_id')
+        season = data.get('season', '2024')
+        
+        football_client, feature_engineer, predictor, db, _ = _clients()
+        
+        # Get team info
+        home_info = football_client.get_team_info(home_team_id)
+        away_info = football_client.get_team_info(away_team_id)
+        
+        home_name = home_info.get('name', f'Team {home_team_id}')
+        away_name = away_info.get('name', f'Team {away_team_id}')
+        
+        # Get team stats
+        home_matches = football_client.get_team_matches(home_team_id, season)
+        away_matches = football_client.get_team_matches(away_team_id, season)
+        
+        home_stats = feature_engineer.calculate_team_stats(home_matches, home_team_id, is_home=None)
+        away_stats = feature_engineer.calculate_team_stats(away_matches, away_team_id, is_home=None)
+        
+        # Get recent form (last 5 matches)
+        home_recent = football_client.get_recent_matches(home_team_id, limit=5)
+        away_recent = football_client.get_recent_matches(away_team_id, limit=5)
+        
+        home_recent_sorted = sorted(home_recent, key=lambda x: x.get('utcDate', ''), reverse=True)
+        away_recent_sorted = sorted(away_recent, key=lambda x: x.get('utcDate', ''), reverse=True)
+        
+        # Calculate form string (wins/draws/losses in last 5)
+        def get_form_string(matches, team_id):
+            results = []
+            for match in matches[:5]:
+                is_home = match.get('homeTeam', {}).get('id') == team_id
+                if is_home:
+                    home_goals = match.get('score', {}).get('fullTime', {}).get('home', 0)
+                    away_goals = match.get('score', {}).get('fullTime', {}).get('away', 0)
+                else:
+                    home_goals = match.get('score', {}).get('fullTime', {}).get('home', 0)
+                    away_goals = match.get('score', {}).get('fullTime', {}).get('away', 0)
+                
+                if is_home:
+                    if home_goals > away_goals:
+                        results.append('W')
+                    elif home_goals == away_goals:
+                        results.append('D')
+                    else:
+                        results.append('L')
+                else:
+                    if away_goals > home_goals:
+                        results.append('W')
+                    elif home_goals == away_goals:
+                        results.append('D')
+                    else:
+                        results.append('L')
+            return '-'.join(results[:5]) if results else 'No Data'
+        
+        home_form = get_form_string(home_recent_sorted, home_team_id)
+        away_form = get_form_string(away_recent_sorted, away_team_id)
+        
+        # Get standings for position
+        try:
+            standings = football_client.get_standings('PL')  # Assuming PL for now
+            home_pos = next((s for s in standings if s.get('team_id') == home_team_id), {}).get('position', 'N/A')
+            away_pos = next((s for s in standings if s.get('team_id') == away_team_id), {}).get('position', 'N/A')
+        except:
+            home_pos = 'N/A'
+            away_pos = 'N/A'
+        
+        # Make prediction
+        prediction = predictor.predict_ensemble(home_stats, away_stats)
+        expected_goals = (home_stats.get('goals_per_game', 0) + away_stats.get('goals_per_game', 0))
+        btts_probability = prediction.get('btts_probability', 0)
+        confidence = max(btts_probability, 1 - btts_probability) if btts_probability else 0
+        
+        # Generate AI analysis
+        ai_result = ai_analyzer.generate_btts_analysis(
+            home_name=home_name,
+            away_name=away_name,
+            home_stats=home_stats,
+            away_stats=away_stats,
+            expected_goals=expected_goals,
+            btts_probability=btts_probability,
+            confidence=confidence,
+            home_form=home_form,
+            away_form=away_form,
+            home_pos=f'Position {home_pos}',
+            away_pos=f'Position {away_pos}'
+        )
+        
+        return jsonify({
+            'success': ai_result['success'],
+            'analysis': ai_result['analysis'],
+            'error': ai_result.get('error'),
+            'home_name': home_name,
+            'away_name': away_name,
+            'btts_probability': float(btts_probability),
+            'home_stats': home_stats,
+            'away_stats': away_stats
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in AI BTTS analysis: {e}")
+        return jsonify({
+            'success': False,
+            'analysis': '',
+            'error': str(e)
+        }), 500
+
 @api_bp.route('/healthz', methods=['GET'])
 def healthz():
     return jsonify({'status': 'ok'}), 200
