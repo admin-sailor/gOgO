@@ -101,17 +101,6 @@ class API {
     static async getAggregatedLeagues() {
         return this.request('/aggregated/leagues');
     }
-
-    static async analyzeBTTSWithAI(homeTeamId, awayTeamId, season = '2024') {
-        return this.request('/ai/analyze-btts', {
-            method: 'POST',
-            body: JSON.stringify({
-                home_team_id: homeTeamId,
-                away_team_id: awayTeamId,
-                season: season,
-            })
-        });
-    }
 }
 // Expose API to global window to ensure availability across scripts
 if (typeof window !== 'undefined') {

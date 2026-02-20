@@ -151,7 +151,7 @@ class MySQLDB:
             return None
 
     def store_prediction(self, home_team_id: int, away_team_id: int,
-                         fixture_id: Optional[int], prediction: Dict, user_id: Optional[str] = None, odds: Optional[float] = None):
+                         fixture_id: Optional[int], prediction: Dict, user_id: Optional[str] = None, odds: Optional[float] = None, ai_review: Optional[str] = None):
         """Store prediction in database; upsert on fixture_id when provided"""
         try:
             conn = self._get_conn()
@@ -161,8 +161,8 @@ class MySQLDB:
                 """
                 INSERT INTO predictions
                   (fixture_id, home_team_id, away_team_id, btts_probability, btts_prediction,
-                   confidence, model_type, odds, user_id, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                   confidence, model_type, odds, user_id, ai_review, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                 ON DUPLICATE KEY UPDATE
                    btts_probability = VALUES(btts_probability),
                    btts_prediction = VALUES(btts_prediction),
@@ -170,6 +170,7 @@ class MySQLDB:
                    model_type = VALUES(model_type),
                    odds = VALUES(odds),
                    user_id = VALUES(user_id),
+                   ai_review = COALESCE(VALUES(ai_review), ai_review),
                    updated_at = NOW()
                 """,
                 (
@@ -181,7 +182,8 @@ class MySQLDB:
                     float(prediction.get('confidence') or 0),
                     str(prediction.get('model') or 'ensemble'),
                     odds,
-                    user_id
+                    user_id,
+                    ai_review
                 )
             )
             cur.close()
@@ -189,6 +191,59 @@ class MySQLDB:
             logger.info(f"Stored prediction (fixture_id={fixture_val})")
         except Error as e:
             logger.error(f"Error storing prediction: {e}")
+
+    def get_prediction_by_fixture(self, fixture_id: int, user_id: Optional[str] = None) -> Optional[Dict]:
+        """Get prediction with AI review by fixture_id"""
+        try:
+            conn = self._get_conn()
+            cur = conn.cursor(dictionary=True)
+            if user_id:
+                cur.execute(
+                    """
+                    SELECT * FROM predictions
+                    WHERE fixture_id = %s AND (user_id = %s OR user_id IS NULL)
+                    ORDER BY user_id DESC
+                    LIMIT 1
+                    """,
+                    (fixture_id, user_id)
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT * FROM predictions
+                    WHERE fixture_id = %s
+                    LIMIT 1
+                    """,
+                    (fixture_id,)
+                )
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+            return row
+        except Error as e:
+            logger.error(f"Error fetching prediction: {e}")
+            return None
+
+    def update_ai_review(self, fixture_id: int, ai_review: str, user_id: Optional[str] = None) -> bool:
+        """Update AI review for a prediction"""
+        try:
+            conn = self._get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                """
+                UPDATE predictions
+                SET ai_review = %s, updated_at = NOW()
+                WHERE fixture_id = %s AND (user_id = %s OR (user_id IS NULL AND %s IS NULL))
+                """,
+                (ai_review, fixture_id, user_id, user_id)
+            )
+            cur.close()
+            conn.close()
+            logger.info(f"Updated AI review for fixture {fixture_id}")
+            return True
+        except Error as e:
+            logger.error(f"Error updating AI review: {e}")
+            return False
 
     def get_team_by_name(self, name: str) -> Optional[Dict]:
         """Get team info by name"""

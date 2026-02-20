@@ -54,12 +54,6 @@ function initializeEventListeners() {
         cancelBtn.addEventListener('click', cancelPrediction);
     }
 
-    // AI Analysis
-    const generateAIBtn = document.getElementById('generateAIBtn');
-    if (generateAIBtn) {
-        generateAIBtn.addEventListener('click', generateAIAnalysis);
-    }
-
     // Fixtures
     document.getElementById('loadFixturesBtn').addEventListener('click', loadUpcomingFixtures);
     const themeBtn = document.getElementById('themeToggle');
@@ -639,6 +633,17 @@ async function displayPredictionResult(result) {
     renderForm(result.away_last_5, awayTeamId, 'awayLast5');
     renderH2H(result.h2h_matches, homeTeamId, 'h2hMatches');
 
+    // Display AI review if available
+    const aiReview = result.ai_review;
+    const aiSection = document.getElementById('aiAnalysisSection');
+    const aiText = document.getElementById('aiAnalysisText');
+    if (aiReview && aiSection && aiText) {
+        aiText.innerHTML = formatAIReview(aiReview);
+        aiSection.classList.remove('hidden');
+    } else if (aiSection) {
+        aiSection.classList.add('hidden');
+    }
+
     document.getElementById('predictionResult').classList.remove('hidden');
     const cards = document.getElementById('resultCards');
     if (cards) {
@@ -1201,61 +1206,8 @@ function cancelPrediction() {
     } catch (_) {}
 }
 
-async function generateAIAnalysis() {
-    try {
-        const homeTeamId = parseInt(document.getElementById('homeTeam').value);
-        const awayTeamId = parseInt(document.getElementById('awayTeam').value);
-        const season = document.getElementById('season').value;
-
-        if (!homeTeamId || !awayTeamId) {
-            showToast('Please make a prediction first', 'error');
-            return;
-        }
-
-        if (homeTeamId === awayTeamId) {
-            showToast('Teams must be different', 'error');
-            return;
-        }
-
-        const generateBtn = document.getElementById('generateAIBtn');
-        const aiContainer = document.getElementById('aiAnalysisContainer');
-        const aiLoader = document.getElementById('aiAnalysisLoader');
-        const aiResult = document.getElementById('aiAnalysisResult');
-
-        // Show loading state
-        generateBtn.disabled = true;
-        generateBtn.textContent = 'Generating...';
-        aiContainer.classList.remove('hidden');
-        aiLoader.classList.remove('hidden');
-        aiResult.classList.add('hidden');
-
-        const response = await API.analyzeBTTSWithAI(homeTeamId, awayTeamId, season);
-
-        if (response.success) {
-            // Format and display the analysis
-            const analysisText = document.getElementById('aiAnalysisText');
-            analysisText.innerHTML = formatAIAnalysis(response.analysis);
-            
-            aiLoader.classList.add('hidden');
-            aiResult.classList.remove('hidden');
-            showToast('AI analysis generated successfully', 'success');
-        } else {
-            throw new Error(response.error || 'Failed to generate analysis');
-        }
-    } catch (error) {
-        console.error('Error generating AI analysis:', error);
-        showToast('Error: ' + (error.message || 'Failed to generate analysis'), 'error');
-        const aiLoader = document.getElementById('aiAnalysisLoader');
-        aiLoader.classList.add('hidden');
-    } finally {
-        const generateBtn = document.getElementById('generateAIBtn');
-        generateBtn.disabled = false;
-        generateBtn.textContent = 'Generate AI Analysis';
-    }
-}
-
-function formatAIAnalysis(text) {
-    // Format the AI response with proper line breaks and styling
+function formatAIReview(text) {
+    // Format the AI review with proper line breaks and styling
     let formatted = text
         // Handle numbered sections
         .replace(/(\d+\.\s+[A-Z][^\n]*)/g, '<h4 style="margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600;">$1</h4>')
