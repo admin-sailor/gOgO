@@ -1229,8 +1229,6 @@ async function generateAIAnalysis() {
         aiLoader.classList.remove('hidden');
         aiResult.classList.add('hidden');
 
-        console.log(' Generating AI analysis for:', homeTeamId, 'vs', awayTeamId);
-
         const response = await API.analyzeBTTSWithAI(homeTeamId, awayTeamId, season);
 
         if (response.success) {

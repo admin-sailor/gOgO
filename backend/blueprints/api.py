@@ -1,12 +1,10 @@
 from flask import Blueprint, jsonify, request, current_app
 from config import FOOTBALL_API_KEY
-from ai_analyzer import AIAnalyzer
 import logging
 import numpy as np
 
 logger = logging.getLogger(__name__)
 api_bp = Blueprint('api', __name__)
-ai_analyzer = AIAnalyzer()
 
 def _clients():
     app = current_app
@@ -16,7 +14,11 @@ def _clients():
         app.config['predictor'],
         app.config['db'],
         app.config['aggregated_source'],
+        app.config['ai_analyzer'],
     )
+
+def get_ai_analyzer():
+    return current_app.config.get('ai_analyzer')
 
 @api_bp.route('/api/test', methods=['GET'])
 def test():
@@ -326,7 +328,7 @@ def analyze_btts_ai():
         away_team_id = data.get('away_team_id')
         season = data.get('season', '2024')
         
-        football_client, feature_engineer, predictor, db, _ = _clients()
+        football_client, feature_engineer, predictor, db, _, ai_analyzer = _clients()
         
         # Get team info
         home_info = football_client.get_team_info(home_team_id)

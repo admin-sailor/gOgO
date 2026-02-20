@@ -4,6 +4,7 @@ from config import CORS_ORIGINS
 from data_client import FootballDataClient, FeatureEngineer, AggregatedDataSource
 from ml_models import BTTSPredictor
 from mysql_db import MySQLDB
+from ai_analyzer import AIAnalyzer
 import os
 import logging
 
@@ -18,11 +19,13 @@ def create_app():
     predictor = BTTSPredictor()
     db = MySQLDB()
     aggregated_source = AggregatedDataSource(os.path.join(os.path.dirname(__file__), 'football_data.aggregated_data.json'))
+    ai_analyzer = AIAnalyzer()
     app.config['football_client'] = football_client
     app.config['feature_engineer'] = feature_engineer
     app.config['predictor'] = predictor
     app.config['db'] = db
     app.config['aggregated_source'] = aggregated_source
+    app.config['ai_analyzer'] = ai_analyzer
     try:
         from .blueprints.api import api_bp
     except ImportError:
