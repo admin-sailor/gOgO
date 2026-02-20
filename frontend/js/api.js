@@ -6,7 +6,9 @@ function resolveApiBase() {
         const m = typeof document !== 'undefined' ? document.querySelector('meta[name="api-base-url"]') : null;
         if (m && m.content) return String(m.content).replace(/\/$/, '');
         const o = typeof location !== 'undefined' ? location.origin : '';
-        if (o) return `${o}/api`;
+        if (o && !o.includes('localhost')) return `${o}/api`;
+        // For localhost development, always use http on port 5000
+        if (o && o.includes('localhost')) return 'http://localhost:5000/api';
         return DEFAULT_API_BASE;
     } catch (_) {
         return DEFAULT_API_BASE;
